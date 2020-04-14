@@ -1,24 +1,20 @@
 /* Includes ----------------------------------------------------------*/
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "fmt.h"
 #include "msg.h"
-#include "thread.h"
-
+#include "net/loramac.h"
 #include "periph/adc.h"
 #include "periph/gpio.h"
-#include "periph/rtc.h"
 #include "periph/pm.h"
-
-#include "net/loramac.h"
-#include "semtech_loramac.h"
-
-#include "xtimer.h"
-
+#include "periph/rtc.h"
 #include "scaling.h"
+#include "semtech_loramac.h"
+#include "thread.h"
+#include "xtimer.h"
 
 /* Private typedef ---------------------------------------------------*/
 
@@ -41,6 +37,7 @@
 #endif /* DEFAULT_RESOLUTION */
 
 /* Private macro -----------------------------------------------------*/
+
 /* Private variables -------------------------------------------------*/
 static kernel_pid_t sender_pid;
 static char sender_stack[THREAD_STACKSIZE_MAIN / 2];
@@ -64,8 +61,7 @@ float _get_vcc(void);
 void _init_unused_pins(void);
 
 /* Private functions -------------------------------------------------*/
-int main(void)
-{
+int main(void) {
     uint8_t number_join_tries = 0;
     uint8_t loramac_datarate = 0;
 
@@ -101,16 +97,16 @@ int main(void)
 
     /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
     semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
-    
+
     /* Use ADR */
     semtech_loramac_set_adr(&loramac, true);
-    
+
     /* Use unconfirmed data mode */
     semtech_loramac_set_tx_mode(&loramac, LORAMAC_TX_UNCNF);
-    
+
     /* Use port 1 for uplink masseges */
     semtech_loramac_set_tx_port(&loramac, 1);
-    
+
     /* Start the Over-The-Air Activation (OTAA) procedure to retrieve the
      * generated device address and to get the network and application session
      * keys.
@@ -133,7 +129,7 @@ int main(void)
 
     /* start the sender thread */
     sender_pid = thread_create(sender_stack, sizeof(sender_stack), SENDER_PRIO, 0, sender, NULL, "sender");
-    
+
     /* start the receive thread */
     thread_create(_recv_stack, sizeof(_recv_stack), THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
 
@@ -143,15 +139,13 @@ int main(void)
     return 0;
 }
 
-static void rtc_cb(void *arg)
-{
-    (void) arg;
+static void rtc_cb(void *arg) {
+    (void)arg;
     msg_t msg;
     msg_send(&msg, sender_pid);
 }
 
-static int _prepare_next_alarm(void)
-{
+static int _prepare_next_alarm(void) {
     struct tm time;
     struct tm alarm;
     int rc;
@@ -166,7 +160,7 @@ static int _prepare_next_alarm(void)
         rtc_get_alarm(&alarm);
         rc = memcmp(&time, &alarm, sizeof(struct tm));
         tries--;
-    } while ( (rc != 0) && (tries != 0) );
+    } while ((rc != 0) && (tries != 0));
 
     if (rc == 0) {
         puts("RTC alarm set\n");
@@ -177,19 +171,17 @@ static int _prepare_next_alarm(void)
     return rc;
 }
 
-static void _send_message(uint8_t length)
-{
+static void _send_message(uint8_t length) {
     printf("Sending\n");
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac, message, length);
-    if (ret != SEMTECH_LORAMAC_TX_DONE)  {
+    if (ret != SEMTECH_LORAMAC_TX_DONE) {
         printf("Cannot send message, ret code: %d\n", ret);
         return;
     }
 }
 
-static void *sender(void *arg)
-{
+static void *sender(void *arg) {
     (void)arg;
 
     msg_t msg;
@@ -198,14 +190,14 @@ static void *sender(void *arg)
 
     while (1) {
         msg_receive(&msg);
-        
+
         if (resolution == 0) {
-            semtech_loramac_set_tx_port(&loramac, 1); //TODO Port enum
+            semtech_loramac_set_tx_port(&loramac, 1);  //TODO Port enum
             uint8_t vbat = (uint8_t)scaling_float(_get_vcc(), 2.0, 4.0, 0.0, 255.0, LIMIT_OUTPUT);
             message[0] = (uint8_t)vbat;
             _send_message(1);
         } else if (resolution == 1) {
-            semtech_loramac_set_tx_port(&loramac, 2); //TODO Port enum
+            semtech_loramac_set_tx_port(&loramac, 2);  //TODO Port enum
             uint16_t vbat = (uint16_t)scaling_float(_get_vcc(), 2.0, 4.0, 0.0, 65535.0, LIMIT_OUTPUT);
             message[0] = (uint8_t)(vbat >> 8);
             message[1] = (uint8_t)(vbat);
@@ -215,7 +207,7 @@ static void *sender(void *arg)
         xtimer_sleep(3);
 
         /* Schedule the next wake-up alarm */
-        if(_prepare_next_alarm() == 0) {
+        if (_prepare_next_alarm() == 0) {
             /* going to deep sleep */
             puts("Going to sleep");
             pm_set(1);
@@ -229,63 +221,61 @@ static void *sender(void *arg)
     return NULL;
 }
 
-static void *_recv(void *arg)
-{
+static void *_recv(void *arg) {
     msg_init_queue(_recv_queue, RECV_MSG_QUEUE);
-    
+
     (void)arg;
     uint16_t received_interval = 0;
     uint8_t received_resolution = 0;
-    
+
     while (1) {
         /* blocks until some data is received */
         semtech_loramac_recv(&loramac);
         loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
         puts("Data received:");
-        for (uint8_t i = 0; i < loramac.rx_data.payload_len; i++)
-        {
+        for (uint8_t i = 0; i < loramac.rx_data.payload_len; i++) {
             print_byte_hex(loramac.rx_data.payload[i]);
         }
         puts("\nPort:");
         print_u32_dec((uint32_t)loramac.rx_data.port);
         puts("");
-        
+
         /* process received data */
-        switch(loramac.rx_data.port) {
+        switch (loramac.rx_data.port) {
             case 1: /* resolution */
                 received_resolution = loramac.rx_data.payload[0];
                 if (received_resolution <= 1) {
                     resolution = received_resolution;
                 }
                 break;
-            case 2:/* time of period sending */
+            case 2: /* time of period sending */
                 received_interval = (loramac.rx_data.payload[0] << 8) + loramac.rx_data.payload[1];
-                if (received_interval >= 3 ) {
+                if (received_interval >= 3) {
                     interval_sec = received_interval * 10;
                 }
                 break;
             case 3: /* System reboot */
-                if(loramac.rx_data.payload[0] == 1) {
+                if (loramac.rx_data.payload[0] == 1) {
                     pm_reboot();
-                }                
+                }
                 break;
             case 4: /* rubbish data */
-                if(loramac.rx_data.payload[0] & 1) {
+                if (loramac.rx_data.payload[0] & 1) {
                     gpio_clear(OUT0);
                 } else {
                     gpio_set(OUT0);
                 }
-                if(loramac.rx_data.payload[0] & 2) {
+                if (loramac.rx_data.payload[0] & 2) {
                     gpio_clear(OUT1);
                 } else {
                     gpio_set(OUT1);
                 }
-                if(loramac.rx_data.payload[0] & 4) {
+                if (loramac.rx_data.payload[0] & 4) {
                     gpio_clear(OUT2);
                 } else {
                     gpio_set(OUT2);
                 }
-                if(loramac.rx_data.payload[0] & 8) {
+                if (loramac.rx_data.payload[0] & 8) {
                     gpio_clear(OUT3);
                 } else {
                     gpio_set(OUT3);
@@ -296,14 +286,12 @@ static void *_recv(void *arg)
     return NULL;
 }
 
-float _get_vcc(void)
-{
-  float vbat = 4957.744 / adc_sample(ADC_LINE(10), ADC_RES_12BIT);
-  return vbat;
+float _get_vcc(void) {
+    float vbat = 4957.744 / adc_sample(ADC_LINE(10), ADC_RES_12BIT);
+    return vbat;
 }
 
-void _init_unused_pins(void)
-{
+void _init_unused_pins(void) {
     gpio_t unused_pins[] = {
         //GPIO_PIN(PORT_A, 0), OUT0
         //GPIO_PIN(PORT_A, 1), OUT1
@@ -336,11 +324,9 @@ void _init_unused_pins(void)
         //GPIO_PIN(PORT_B, 13), SCK
         //GPIO_PIN(PORT_B, 14), MISO
         //GPIO_PIN(PORT_B, 15), MOSI
-        GPIO_PIN(PORT_C, 13)
-    };
+        GPIO_PIN(PORT_C, 13)};
 
-    for (uint8_t i = 0; i < (sizeof(unused_pins)/sizeof(gpio_t)); i++)
-    {
+    for (uint8_t i = 0; i < (sizeof(unused_pins) / sizeof(gpio_t)); i++) {
         gpio_init(unused_pins[i], GPIO_IN_PD);
     }
 }

@@ -37,9 +37,7 @@ FEATURES_REQUIRED += periph_adc
 FEATURES_REQUIRED += periph_gpio
 FEATURES_REQUIRED += periph_rtc
 
-#INCLUDES += -Iapplication_include
-
-# Specify custom dependencies for your application here ...
+# Specify custom dependencies for your application here
 APPDEPS = scaling.h
 
 # This has to be the absolute path to the RIOT base directory:
