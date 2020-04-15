@@ -36,6 +36,17 @@
 #define DEFAULT_RESOLUTION 0
 #endif /* DEFAULT_RESOLUTION */
 
+#define SX127X_PARAM_SPI                    (SPI_DEV(1))
+#define SX127X_PARAM_SPI_NSS                GPIO_PIN(PORT_B, 12)
+#define SX127X_PARAM_RESET                  GPIO_PIN(PORT_A, 8)
+#define SX127X_PARAM_DIO0                   GPIO_PIN(PORT_B, 7)
+#define SX127X_PARAM_DIO1                   GPIO_PIN(PORT_B, 6)
+#define SX127X_PARAM_DIO2                   GPIO_PIN(PORT_B, 5)
+#define SX127X_PARAM_DIO3                   GPIO_UNDEF
+#define SX127X_PARAM_PASELECT               (SX127X_PA_BOOST)
+#define SX127X_PARAM_TX_SWITCH              GPIO_UNDEF
+#define SX127X_PARAM_RX_SWITCH              GPIO_UNDEF
+
 /* Private macro -----------------------------------------------------*/
 
 /* Private variables -------------------------------------------------*/
