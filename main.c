@@ -158,7 +158,7 @@ static int _prepare_next_alarm(void) {
     do {
         rtc_set_alarm(&time, rtc_cb, NULL);
         rtc_get_alarm(&alarm);
-        rc = memcmp(&time, &alarm, sizeof(struct tm));
+        rc = rtc_tm_compare(&time, &alarm);
         tries--;
     } while ((rc != 0) && (tries != 0));
 
