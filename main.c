@@ -36,6 +36,8 @@
 #define DEFAULT_RESOLUTION 0
 #endif /* DEFAULT_RESOLUTION */
 
+#define ADC_VREF_INT 11
+
 /* Private macro -----------------------------------------------------*/
 
 /* Private variables -------------------------------------------------*/
@@ -67,7 +69,7 @@ int main(void) {
 
     /* Init peripherie */
     _init_unused_pins();
-    adc_init(ADC_LINE(10));
+    adc_init(ADC_LINE(ADC_VREF_INT));
     gpio_init(OUT0, GPIO_OUT);
     gpio_init(OUT1, GPIO_OUT);
     gpio_init(OUT2, GPIO_OUT);
@@ -287,7 +289,7 @@ static void *_recv(void *arg) {
 }
 
 float _get_vcc(void) {
-    float vbat = 4957.744 / adc_sample(ADC_LINE(10), ADC_RES_12BIT);
+    float vbat = 4957.744 / adc_sample(ADC_LINE(ADC_VREF_INT), ADC_RES_12BIT);
     return vbat;
 }
 
