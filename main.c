@@ -36,7 +36,7 @@
 #define DEFAULT_RESOLUTION 0
 #endif /* DEFAULT_RESOLUTION */
 
-#define ADC_VREF_INT 11
+#define ADC_VREF_INT 9
 #define SEC_PER_HOUR 3600
 
 /* Private macro -----------------------------------------------------*/
