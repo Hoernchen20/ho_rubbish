@@ -37,6 +37,7 @@
 #endif /* DEFAULT_RESOLUTION */
 
 #define ADC_VREF_INT 11
+#define SEC_PER_HOUR 3600
 
 /* Private macro -----------------------------------------------------*/
 
@@ -52,6 +53,7 @@ semtech_loramac_t loramac;
 uint8_t message[50] = {0};
 uint32_t interval_sec = DEFAULT_PERIOD_SENDING;
 uint8_t resolution = DEFAULT_RESOLUTION;
+struct tm received_data_time_s;
 
 /* Private function prototypes ---------------------------------------*/
 static void rtc_cb(void *arg);
@@ -193,6 +195,21 @@ static void *sender(void *arg) {
     while (1) {
         msg_receive(&msg);
 
+        /* turn off output after 24h */
+        struct tm now_s;
+        uint32_t now;
+        uint32_t received_data_time;
+        rtc_get_time(&now_s);
+        now = rtc_mktime(&now_s);
+        received_data_time = rtc_mktime(&received_data_time_s);
+
+        if (now - received_data_time > 24*SEC_PER_HOUR) {
+            gpio_set(OUT0);
+            gpio_set(OUT1);
+            gpio_set(OUT2);
+            gpio_set(OUT3);
+        }
+
         if (resolution == 0) {
             semtech_loramac_set_tx_port(&loramac, 1);  //TODO Port enum
             uint8_t vbat = (uint8_t)scaling_float(_get_vcc(), 2.0, 4.0, 0.0, 255.0, LIMIT_OUTPUT);
@@ -262,6 +279,7 @@ static void *_recv(void *arg) {
                 }
                 break;
             case 4: /* rubbish data */
+                rtc_get_time(&received_data_time_s);
                 if (loramac.rx_data.payload[0] & 1) {
                     gpio_clear(OUT0);
                 } else {
