@@ -41,7 +41,7 @@ QUIET ?= 1
 USEPKG += semtech-loramac
 USEMODULE += fmt
 USEMODULE += semtech_loramac_rx
-#USEMODULE += stdio_null
+USEMODULE += stdio_null
 USEMODULE += sx1276
 
 FEATURES_REQUIRED += periph_adc
