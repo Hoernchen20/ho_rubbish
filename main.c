@@ -200,10 +200,10 @@ static void *sender(void *arg) {
         uint32_t now;
         uint32_t received_data_time;
         rtc_get_time(&now_s);
-        now = rtc_mktime(&now_s);
+        now = rtc_mktime(&now_s) + ON_TIME;
         received_data_time = rtc_mktime(&received_data_time_s);
 
-        if (now - received_data_time > 24*SEC_PER_HOUR) {
+        if (now - received_data_time >= 24*SEC_PER_HOUR) {
             gpio_set(OUT0);
             gpio_set(OUT1);
             gpio_set(OUT2);
