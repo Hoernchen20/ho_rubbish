@@ -116,6 +116,7 @@ int main(void) {
      * keys.
      */
     puts("Starting join procedure");
+    LED0_ON;
     while (semtech_loramac_join(&loramac, LORAMAC_JOIN_OTAA) != SEMTECH_LORAMAC_JOIN_SUCCEEDED) {
         puts("Join procedure failed, try in 30s again");
         xtimer_sleep(22);
@@ -130,6 +131,7 @@ int main(void) {
         }
     }
     puts("Join procedure succeeded");
+    LED0_OFF;
 
     /* start the sender thread */
     sender_pid = thread_create(sender_stack, sizeof(sender_stack), SENDER_PRIO, 0, sender, NULL, "sender");
@@ -344,7 +346,8 @@ void _init_unused_pins(void) {
         //GPIO_PIN(PORT_B, 13), SCK
         //GPIO_PIN(PORT_B, 14), MISO
         //GPIO_PIN(PORT_B, 15), MOSI
-        GPIO_PIN(PORT_C, 13)};
+        //GPIO_PIN(PORT_C, 13), LED0
+    };
 
     for (uint8_t i = 0; i < (sizeof(unused_pins) / sizeof(gpio_t)); i++) {
         gpio_init(unused_pins[i], GPIO_IN_PD);
